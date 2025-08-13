@@ -1,5 +1,5 @@
 //Firebase
-import { db } from "../../firebase/config"
+
 import { getAuth, signOut, signInWithEmailAndPassword, } from "firebase/auth";
 
 //React

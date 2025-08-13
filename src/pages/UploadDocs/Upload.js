@@ -16,8 +16,7 @@ const Upload = () => {
   const [file, setFile] = useState("");
   const [formError, setFormError] = useState("");
 
-  const { insertDocument, response } = useInsertDocument("documents");
-  const navigate = useNavigate();
+  const { insertDocument } = useInsertDocument("documents");
 
   const handleSubmit = (e) => {
     e.preventDefault();

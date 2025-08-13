@@ -4,8 +4,6 @@ import styles from "./UploadedDocs.module.css";
 import { useAuthentication } from "../../hooks/Auth/useAuthentication";
 import { useUploadedDocs } from "../../hooks/UploadDoc/useUploadedDocs";
 
-//Router
-import { useNavigate } from "react-router-dom";
 
 const UploadedDocs = () => {
   const { logout } = useAuthentication();
