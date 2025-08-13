@@ -4,9 +4,6 @@ import styles from "./Upload.module.css";
 //Hooks
 import { useInsertDocument } from "../../hooks/UploadDoc/useUploadDoc";
 
-//Router
-import { useNavigate } from "react-router-dom";
-
 //React
 import { useState } from "react";
 
