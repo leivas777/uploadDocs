@@ -1,31 +1,52 @@
-.body{
+.body {
     margin-top: 15px;
 }
 
-.uploadContainer{
+.uploadContainer {
     display: flex;
     flex-direction: column;
 }
 
-.uploadTitle{
+.uploadTitle {
     text-align: center;
 }
-.uploadData{
+
+.uploadData {
     padding: 20px;
-    
+
 }
-.uploadData form{
+
+.uploadData form {
     display: flex;
     flex-direction: column;
     gap: 25px;
     align-items: center;
 }
 
-.uploadData form label{
+.uploadData form label {
     display: flex;
     gap: 10px;
     font-weight: bold;
 }
-.uploadData form label input{
+
+.uploadData form label input {
     width: 200px;
+}
+
+form button {
+    background-color: #1a8918;
+    color: #fff;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 10px;
+    width: 120px;
+    font-weight: bold;
+    border: none;
+    padding: 10px 15px;
+    font-size: 1em;
+}
+
+form button:hover {
+    background-color: #0F730C;
+    color: #fff;
 }
