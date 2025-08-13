@@ -1,0 +1,38 @@
+.main {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main button {
+    width: 200px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+
+}
+
+.documents {
+    justify-items: center;
+    width: 50%;
+}
+
+.documents table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.documents table thead{
+    background-color: cornflowerblue;
+}
+
+.documents table th,
+.documents table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+

@@ -1,0 +1,31 @@
+.body{
+    margin-top: 15px;
+}
+
+.uploadContainer{
+    display: flex;
+    flex-direction: column;
+}
+
+.uploadTitle{
+    text-align: center;
+}
+.uploadData{
+    padding: 20px;
+    
+}
+.uploadData form{
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    align-items: center;
+}
+
+.uploadData form label{
+    display: flex;
+    gap: 10px;
+    font-weight: bold;
+}
+.uploadData form label input{
+    width: 200px;
+}
