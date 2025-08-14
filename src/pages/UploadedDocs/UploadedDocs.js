@@ -1,3 +1,4 @@
+// UploadedDocs.js
 //CSS
 import styles from "./UploadedDocs.module.css";
 //Hooks
@@ -43,24 +44,28 @@ const UploadedDocs = () => {
               !error &&
               documents.length > 0 &&
               documents.map(
-                (
-                  post // <-- MUDAR {} PARA () AQUI
-                ) => (
+                (post) => (
                   <tr key={post.id}>
                     <td>{post.fullName}</td>
                     <td>{post.telephone}</td>
                     <td>
-                      {post.fileURL ? (
+                      {/* 👉 AGORA USAMOS post.downloadUrl */}
+                      {post.downloadUrl ? (
                         <a
-                          href={post.fileURL}
-                          target="_blank" // Abrir em nova aba é uma boa prática
+                          href={post.downloadUrl}
+                           
                           rel="noopener noreferrer"
-                          download={post.fileName || "document.pdf"}
+                          // Use download attribute para forçar o download em vez de abrir no navegador
+                          // O navegador ainda pode abrir se o tipo de arquivo for suportado
+                          download={post.fileName || `documento-${post.id}`} 
                         >
                           {post.fileName || "Visualizar/Baixar Documento"}
                         </a>
                       ) : (
-                        "N/A"
+                        // Mostra uma mensagem de erro se a URL não pôde ser gerada
+                        <span style={{ color: 'red' }}>
+                          Não disponível {post.downloadError ? `(${post.downloadError.substring(0, 30)}...)` : ''}
+                        </span>
                       )}
                     </td>
                   </tr>

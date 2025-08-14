@@ -21,6 +21,8 @@ import Login from "./pages/Auth/Login/Login";
 
 //Firebase
 import { onAuthStateChanged } from "firebase/auth";
+import SuccessUpload from "./pages/ResponseUpload/SuccessUpload";
+import ErrorUpload from "./pages/ResponseUpload/ErrorUpload";
 
 function App() {
   const [user, setUser] = useState(undefined);
@@ -44,6 +46,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/upload" element={<Upload />} />
+            <Route path="/sucessoUpload" element={<SuccessUpload/>}/>
+            <Route path="/erroUpload" element={<ErrorUpload/>}/>
             <Route
               path="/uploadedDocs"
               element={user ? <UploadedDocs /> : <Navigate to="/login" />}

@@ -1,11 +1,11 @@
 // useInsertDocument.js
 // React
-import { useState, useEffect, useReducer } from "react";
+import { useState, useEffect, useReducer, useCallback } from "react";
 
 // Firebase
 import { db, storage } from "../../firebase/config";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"
+import { ref, uploadBytesResumable } from "firebase/storage"
 
 const initialState = {
   loading: null,
@@ -16,14 +16,10 @@ const initialState = {
 const insertReducer = (state, action) => {
   switch (action.type) {
     case "LOADING":
-      return { loading: true, error: null };
+      return { loading: true, error: null, document: null };
     case "INSERTED_DOC":
-      // Quando o documento é inserido com sucesso, você pode querer retornar os dados inseridos
       return { loading: false, error: null, document: action.payload };
     case "ERROR":
-      // O 'document: action.payload' aqui não faz muito sentido para erro,
-      // geralmente seria 'document: null' ou 'document: state.document'
-      // Ajustei para 'document: null' para clareza
       return { loading: false, error: action.payload, document: null };
     default:
       return state;
@@ -34,50 +30,54 @@ export const useInsertDocument = (docCollection) => {
   const [response, dispatch] = useReducer(insertReducer, initialState);
   const [canceled, setCanceled] = useState(false);
 
-  const checkCancelBeforeDispatch = (action) => {
-    if (!canceled) {
-      dispatch(action);
-    }
-  };
-
-  // O 'documentData' agora incluirá o objeto File no campo 'file'
-  const insertDocument = async (documentData) => {
-    checkCancelBeforeDispatch({ type: "LOADING" });
-    console.log("useInsertDocument: Data received for upload:", documentData); // Debug inicial
+  const insertDocument = useCallback(async (documentData) => {
+    // 👉 1. Dispatch LOADING imediatamente para atualizar a UI.
+    // Esta ação é síncrona e deve ocorrer antes de qualquer verificação de cancelamento
+    // que possa abortar a operação principal.
+    dispatch({ type: "LOADING" });
+    console.log("useInsertDocument - Dispatching LOADING.");
 
     try {
-      const { file, ...rest } = documentData; // Separa o objeto File do restante dos dados
-      let fileURL = null;
+      // 👉 2. Agora, verifique se o hook foi "cancelado" (componente desmontado)
+      // Se sim, aborte a operação longa e defina o estado de erro.
+      if (canceled) {
+        const cancelError = new Error("Operação de upload cancelada: componente desmontado.");
+        console.warn("useInsertDocument - Component already unmounted. Aborting operation.");
+        // Define o estado de erro, pois a operação foi abortada.
+        dispatch({ type: "ERROR", payload: cancelError }); 
+        return Promise.reject(cancelError); // Rejeita a Promise para que o chamador capture
+      }
+
+      const { file, ...rest } = documentData;
+      let storageFilePath = null;
       let fileName = null;
 
-      if (file) { // Só tenta upload se um objeto File existir
+      if (file) {
         console.log("useInsertDocument: File object detected. Starting Storage upload.");
-        // Cria um nome único para o arquivo no Storage para evitar colisões
-        fileName = `${Date.now()}-${file.name}`; // Removi o espaço extra após o '-' no fileName
-        const storageRef = ref(storage, `documents/${fileName}`); // Define o caminho no Storage
+        fileName = `${Date.now()}-${file.name}`;
+        storageFilePath = `unauthenticated_uploads/${fileName}`; 
+        const storageRef = ref(storage, storageFilePath);
 
         const uploadTask = uploadBytesResumable(storageRef, file);
 
-        // Monitora o progresso e a conclusão do upload
         await new Promise((resolve, reject) => {
           uploadTask.on(
             "state_changed",
             (snapshot) => {
-              // Você pode usar isso para exibir uma barra de progresso (opcional)
               const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
               console.log(`useInsertDocument: Upload está ${progress.toFixed(2)}% pronto.`);
             },
             (error) => {
-              // Trata erros de upload
-              console.error("useInsertDocument: Erro no upload para o Storage:", error);
-              checkCancelBeforeDispatch({ type: "ERROR", payload: error.message });
-              reject(error); // Rejeita a promise em caso de erro
+              console.error("useInsertDocument: Erro REAL no upload para o Storage (on state_changed):", error);
+              // Dispatch ERROR apenas se não cancelado APÓS a operação assíncrona (boa prática)
+              if (!canceled) {
+                dispatch({ type: "ERROR", payload: error });
+              }
+              reject(error); 
             },
-            async () => {
-              // Upload completo, agora obtém a URL de download
-              fileURL = await getDownloadURL(uploadTask.snapshot.ref);
-              console.log("useInsertDocument: File uploaded to Storage. Download URL:", fileURL);
-              resolve(); // <--- CHAMA RESOLVE() AQUI! ISSO É CRUCIAL!
+            () => {
+              console.log("useInsertDocument: File uploaded to Storage. Skipping getDownloadURL for security.");
+              resolve(); 
             }
           );
         });
@@ -85,36 +85,53 @@ export const useInsertDocument = (docCollection) => {
         console.log("useInsertDocument: No file object detected. Saving metadata only (if applicable).");
       }
 
-      // 2. Salvar os dados do documento no Firestore
       const newDocument = {
-        ...rest, // full_name, process_number, telephone
-        fileURL, // A URL para download do arquivo no Storage (agora preenchida!)
-        fileName, // O nome original do arquivo (agora preenchido!)
-        createdAt: Timestamp.fromDate(new Date()), // Use Timestamp para datas no Firestore
+        ...rest,
+        storageFilePath: storageFilePath, 
+        fileName: fileName, 
+        createdAt: Timestamp.fromDate(new Date()),
       };
 
-      console.log("useInsertDocument: Document data prepared for Firestore:", newDocument); // <-- MUITO IMPORTANTE!
+      console.log("useInsertDocument: Document data prepared for Firestore:", newDocument);
 
       const insertedDocumentRef = await addDoc(
         collection(db, docCollection),
         newDocument
       );
 
+      const resultPayload = { id: insertedDocumentRef.id, ...newDocument };
       console.log("useInsertDocument: Document successfully added to Firestore with ID:", insertedDocumentRef.id);
-
-      checkCancelBeforeDispatch({
-        type: "INSERTED_DOC",
-        payload: { id: insertedDocumentRef.id, ...newDocument },
-      });
+      
+      // Dispatch INSERTED_DOC apenas se não cancelado APÓS a operação assíncrona
+      if (!canceled) {
+        dispatch({ type: "INSERTED_DOC", payload: resultPayload });
+      }
+      console.log("useInsertDocument - insertDocument concluído com sucesso.");
+      return resultPayload; 
     } catch (error) {
-      console.error("useInsertDocument: Erro geral ao fazer upload do documento ou salvar no Firestore:", error);
-      checkCancelBeforeDispatch({ type: "ERROR", payload: error.message });
+      console.error("useInsertDocument: Erro crítico (catch externo):", error);
+      // Dispatch ERROR apenas se não cancelado APÓS a operação assíncrona
+      if (!canceled) {
+        dispatch({ type: "ERROR", payload: error });
+      }
+      console.log("useInsertDocument - insertDocument concluído com erro.");
+      throw error; 
     }
-  };
+  }, [docCollection, canceled]); // `canceled` é uma dependência do useCallback
 
+  // Este useEffect é para gerenciar a flag 'canceled' quando o componente é montado/desmontado
   useEffect(() => {
-    return () => setCanceled(true);
-  }, []);
+    setCanceled(false); // Garante que canceled seja false na montagem inicial
+    return () => {
+      setCanceled(true); // Define canceled como true na desmontagem do componente
+      console.log("useInsertDocument - Cleanup: setCanceled(true)");
+    };
+  }, []); // Array de dependências vazio significa que roda uma vez na montagem e uma vez na desmontagem
+
+  // Log para depuração do estado atual do 'response'
+  useEffect(() => {
+    console.log("useInsertDocument - ESTADO ATUAL DO RESPONSE:", response);
+  }, [response]);
 
   return { insertDocument, response };
 };

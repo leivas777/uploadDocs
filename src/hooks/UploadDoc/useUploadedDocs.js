@@ -1,76 +1,91 @@
+// useUploadedDocs.js
 // React
-import { useState, useEffect } from "react" // Removido 'useRef' pois não será mais necessário para isMounted
+import { useState, useEffect } from "react";
 
 // Firebase
-import { db } from "../../firebase/config"
+import { db, storage } from "../../firebase/config"; // �� Importe 'storage'
 import {
-    collection,
-    onSnapshot,
-    orderBy,
-    query
-} from "firebase/firestore"
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+// 👉 Importe 'ref' e 'getDownloadURL'
+import { ref, getDownloadURL } from "firebase/storage"; 
 
 export const useUploadedDocs = (docCollection) => {
-    const [documents, setDocuments] = useState([])
-    const [error, setError] = useState(null)
-    const [loading, setLoading] = useState(true) // Começa como true
+  const [documents, setDocuments] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    // O isMounted.current não é mais necessário com esta abordagem
-    // A flag 'isCurrentEffectActive' abaixo fará o controle
+  useEffect(() => {
+    let isCurrentEffectActive = true;
 
-    useEffect(() => {
-        // Esta flag será 'true' para esta execução específica do efeito
-        // e se tornará 'false' apenas quando o 'cleanup' deste efeito for chamado.
-        let isCurrentEffectActive = true;
+    console.log("useUploadedDocs Hook: Effect started for collection:", docCollection);
+    setLoading(true);
 
-        console.log("useUploadedDocs Hook: Effect started for collection:", docCollection);
-        setLoading(true); // Garante que o loading seja true ao iniciar a busca
+    const collectionRef = collection(db, docCollection);
+    let q = query(collectionRef, orderBy('createdAt', 'desc'));
 
-        const collectionRef = collection(db, docCollection);
-        let q = query(collectionRef, orderBy('createdAt', 'desc'));
+    // Torne o callback do onSnapshot assíncrono para poder usar await
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => { // 👉 Adicione 'async' aqui
+      console.log("useUploadedDocs: onSnapshot callback triggered.");
+      if (isCurrentEffectActive) {
+        // Primeiro, mapeie os dados brutos do Firestore
+        const rawDocs = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            console.log("useUploadedDocs: onSnapshot callback triggered.");
-            if (isCurrentEffectActive) { // Agora verifica a flag local do efeito
-                const fetchedDocs = querySnapshot.docs.map((doc) => {
-                    // console.log("Document data from Firestore (sample):", doc.data()); // Manter para debug se necessário
-                    return {
-                        id: doc.id,
-                        ...doc.data()
-                    };
-                });
-                console.log("useUploadedDocs: Documents fetched (count):", fetchedDocs.length);
-
-                setDocuments(fetchedDocs);
-                setLoading(false); // Agora este setLoading(false) sempre será chamado se o efeito estiver ativo
-                setError(null);
-                console.log("useUploadedDocs: Loading set to false. Documents state updated.");
-            } else {
-                console.log("useUploadedDocs: onSnapshot triggered but effect no longer active. Skipping state update.");
+        // Agora, para cada documento, tente obter a URL de download
+        const docsWithUrls = await Promise.all( // 👉 Use Promise.all para esperar todas as URLs
+          rawDocs.map(async (doc) => {
+            if (doc.storageFilePath) { // Se o documento tiver um storageFilePath
+              try {
+                // Cria uma referência para o arquivo no Storage
+                const fileRef = ref(storage, doc.storageFilePath);
+                // Tenta obter a URL de download (requer autenticação e permissão de leitura)
+                const downloadUrl = await getDownloadURL(fileRef);
+                return { ...doc, downloadUrl }; // Retorna o documento com a downloadUrl
+              } catch (urlError) {
+                // Se houver um erro ao obter a URL (ex: permissão, arquivo não encontrado)
+                console.warn(`useUploadedDocs: Erro ao obter URL de download para ${doc.storageFilePath}:`, urlError);
+                return { ...doc, downloadUrl: null, downloadError: urlError.message }; // Indica falha na URL
+              }
             }
-        }, (err) => {
-            console.error("useUploadedDocs: Firebase onSnapshot ERROR DETAILS:", err.code, err.message, err);
-            if (isCurrentEffectActive) { // Agora verifica a flag local do efeito
-                setError("Erro ao carregar documentos: " + err.message);
-                setLoading(false); // E este também
-                setDocuments([]);
-                console.log("useUploadedDocs: Loading set to false due to error.");
-            } else {
-                console.log("useUploadedDocs: onSnapshot error fired but effect no longer active. State update skipped.");
-            }
-        });
+            return { ...doc, downloadUrl: null }; // Documento sem storageFilePath
+          })
+        );
 
-        // Cleanup function for this useEffect.
-        // Ela é executada quando o componente é desmontado ou quando as dependências do useEffect mudam.
-        return () => {
-            console.log("useUploadedDocs: Cleanup for effect. Unsubscribing from Firestore.");
-            isCurrentEffectActive = false; // Marca esta execução do efeito como inativa
-            unsubscribe(); // DESINSCREVE-SE DO LISTENER DO FIRESTORE! ESSENCIAL!
-        };
-    }, [docCollection]); // O efeito roda novamente se a coleção mudar
+        console.log("useUploadedDocs: Documents fetched and URLs processed (count):", docsWithUrls.length);
 
-    // Este log roda em toda renderização, mostrando o estado atual
-    console.log("useUploadedDocs Hook: Current state on render - documents:", documents.length, "loading:", loading, "error:", error);
+        setDocuments(docsWithUrls); // Atualize o estado com os documentos que agora têm 'downloadUrl'
+        setLoading(false);
+        setError(null);
+        console.log("useUploadedDocs: Loading set to false. Documents state updated.");
+      } else {
+        console.log("useUploadedDocs: onSnapshot triggered but effect no longer active. Skipping state update.");
+      }
+    }, (err) => {
+      console.error("useUploadedDocs: Firebase onSnapshot ERROR DETAILS:", err.code, err.message, err);
+      if (isCurrentEffectActive) {
+        setError("Erro ao carregar documentos: " + err.message);
+        setLoading(false);
+        setDocuments([]);
+        console.log("useUploadedDocs: Loading set to false due to error.");
+      } else {
+        console.log("useUploadedDocs: onSnapshot error fired but effect no longer active. State update skipped.");
+      }
+    });
 
-    return { documents, loading, error };
-}
+    return () => {
+      console.log("useUploadedDocs: Cleanup for effect. Unsubscribing from Firestore.");
+      isCurrentEffectActive = false;
+      unsubscribe();
+    };
+  }, [docCollection]);
+
+  console.log("useUploadedDocs Hook: Current state on render - documents:", documents.length, "loading:", loading, "error:", error);
+
+  return { documents, loading, error };
+};

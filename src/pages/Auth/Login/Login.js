@@ -2,7 +2,7 @@
 import styles from "./Login.module.css";
 
 //Router
-import { useNavigate } from "react-router-dom"; // Importe useNavigate aqui
+import { useNavigate, Link } from "react-router-dom"; // Importe useNavigate aqui
 
 //Hooks
 import { useAuthentication } from "../../../hooks/Auth/useAuthentication";
@@ -67,14 +67,18 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
-        {!loading && <button className="btn">Entrar</button>}
+        {!loading && <button>Entrar</button>}
         {loading && (
-          <button className="btn" disabled>
+          <button disabled>
             Aguarde...
           </button>
         )}
         {error && <p className="error">{error}</p>}
       </form>
+      <Link to="/">
+            <button>Voltar</button>
+      </Link>
+
     </div>
   );
 };
