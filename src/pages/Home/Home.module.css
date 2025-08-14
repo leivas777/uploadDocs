@@ -7,6 +7,7 @@
     display: flex;
     flex-direction: column;
     gap: 30px;
+    align-items: center;
 }
 
 .uploads,
@@ -16,6 +17,9 @@
     width: fit-content;
     border: 1px solid #000;
     padding: 7px 30px;
+}
+.login{
+    margin-top: 80vh;
 }
 
 .uploads a,

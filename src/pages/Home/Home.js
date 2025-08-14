@@ -15,10 +15,11 @@ const Home = () => {
         <div className={styles.uploads}>
           <Link to='/upload'>Fazer upload de arquivo</Link>
         </div>
-        <div className={styles.login}>
+
+      </div>
+              <div className={styles.login}>
           <Link to='/login'>Efetuar Login</Link>
         </div>
-      </div>
     </div>
   );
 };
