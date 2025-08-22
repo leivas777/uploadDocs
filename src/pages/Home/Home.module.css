@@ -38,3 +38,9 @@
     background-color: #000;
 
 }
+
+.logo {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
