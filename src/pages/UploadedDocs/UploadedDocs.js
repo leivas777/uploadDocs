@@ -19,6 +19,7 @@ const UploadedDocs = () => {
             <tr>
               <th>Cliente:</th>
               <th>Telefone:</th>
+              <th>Descrição:</th>
               <th>Arquivo:</th>
             </tr>
           </thead>
@@ -48,6 +49,7 @@ const UploadedDocs = () => {
                   <tr key={post.id}>
                     <td>{post.fullName}</td>
                     <td>{post.telephone}</td>
+                    <td>{post.docDescription}</td>
                     <td>
                       {/* 👉 AGORA USAMOS post.downloadUrl */}
                       {post.downloadUrl ? (

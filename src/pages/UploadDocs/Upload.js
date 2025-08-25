@@ -11,10 +11,10 @@ import { useState } from "react"; // Removido useEffect, já que a navegação s
 //Router
 import { useNavigate } from "react-router-dom";
 
-
 const Upload = () => {
   const [fullName, setFullName] = useState("");
   const [telephone, setTelephone] = useState("");
+  const [docDescription, setDocDescription] = useState("");
   const [file, setFile] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -33,7 +33,9 @@ const Upload = () => {
 
     // Validação básica do formulário
     if (!fullName || !telephone || !file) {
-      setFormError("Por favor, preencha todos os campos obrigatórios e selecione um arquivo.");
+      setFormError(
+        "Por favor, preencha todos os campos obrigatórios e selecione um arquivo."
+      );
       return;
     }
 
@@ -42,16 +44,22 @@ const Upload = () => {
       const result = await insertDocument({
         fullName,
         telephone,
+        docDescription,
         file,
       });
       console.log("Upload Component - insertDocument RESOLVEU com:", result);
       // Se a Promise resolveu, o upload e save foram bem-sucedidos
       navigate("/sucessoUpload");
     } catch (e) {
-      console.error("Upload Component - Erro FINAL capturado no handleSubmit:", e);
+      console.error(
+        "Upload Component - Erro FINAL capturado no handleSubmit:",
+        e
+      );
       // Se a Promise foi rejeitada, algo deu errado
       // Use a mensagem de erro ou uma mensagem genérica
-      navigate("/erroUpload", { state: { error: e.message || "Erro desconhecido durante o upload." } });
+      navigate("/erroUpload", {
+        state: { error: e.message || "Erro desconhecido durante o upload." },
+      });
     }
   };
 
@@ -83,6 +91,16 @@ const Upload = () => {
                 required
                 onChange={(e) => setTelephone(e.target.value)}
                 value={telephone}
+              />
+            </label>
+            <label>
+              <span>Comentários:</span>
+              <input
+              type="text"
+              maxLength={140}
+              placeholder="Insira uma breve descrição"
+              onChange={(e) => setDocDescription(e.target.value)}
+              value={docDescription}
               />
             </label>
             <label>
