@@ -18,11 +18,13 @@ import Home from "./pages/Home/Home";
 import Upload from "./pages/UploadDocs/Upload";
 import UploadedDocs from "./pages/UploadedDocs/UploadedDocs";
 import Login from "./pages/Auth/Login/Login";
+import MainHome from "./pages/MainHome/MainHome";
 
 //Firebase
 import { onAuthStateChanged } from "firebase/auth";
 import SuccessUpload from "./pages/ResponseUpload/SuccessUpload";
 import ErrorUpload from "./pages/ResponseUpload/ErrorUpload";
+
 
 function App() {
   const [user, setUser] = useState(undefined);
@@ -45,6 +47,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/main" element={<MainHome/>}/>
             <Route path="/upload" element={<Upload />} />
             <Route path="/sucessoUpload" element={<SuccessUpload/>}/>
             <Route path="/erroUpload" element={<ErrorUpload/>}/>
