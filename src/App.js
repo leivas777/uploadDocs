@@ -19,11 +19,15 @@ import Upload from "./pages/UploadDocs/Upload";
 import UploadedDocs from "./pages/UploadedDocs/UploadedDocs";
 import Login from "./pages/Auth/Login/Login";
 import MainHome from "./pages/MainHome/MainHome";
+import Main from "./pages/Main/Main";
+import PrivacyPolicy from "./pages/PrivacyPolicy/PrivacyPolicy";
+import ServiceTerms from "./pages/ServiceTerms/ServiceTerms";
 
 //Firebase
 import { onAuthStateChanged } from "firebase/auth";
 import SuccessUpload from "./pages/ResponseUpload/SuccessUpload";
 import ErrorUpload from "./pages/ResponseUpload/ErrorUpload";
+
 
 
 function App() {
@@ -47,7 +51,10 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/main" element={<MainHome/>}/>
+            <Route path="/chatBot" element={<MainHome/>}/>
+            <Route path="/main" element={<Main/>}/>
+            <Route path="/privacy-policy" element={<PrivacyPolicy/>}/>
+            <Route path="/terms-of-service" element={<ServiceTerms/>}/>
             <Route path="/upload" element={<Upload />} />
             <Route path="/sucessoUpload" element={<SuccessUpload/>}/>
             <Route path="/erroUpload" element={<ErrorUpload/>}/>
